@@ -18,7 +18,7 @@ type Variant = Measurements & {
   version: number;
 };
 type FitTone = 'good' | 'warn' | 'bad';
-type FitView = { label: string; tone: FitTone; score: number; chestEase: number; note: string };
+type FitView = { label: string; tone: FitTone; score: number; chestEase: number; waistEase: number; note: string };
 type Recommendation = Variant & { fit: FitView };
 type ApiRecommendation = {
   variant: Variant;
@@ -65,6 +65,7 @@ function fromApi(result: ApiRecommendation): Recommendation {
       tone: toneFor(result.result),
       score: result.score,
       chestEase: result.chest_ease_cm,
+      waistEase: result.waist_ease_cm,
       note: result.reason,
     },
   };
@@ -81,12 +82,12 @@ function scoreLocal(body: BodyProfile, garment: Variant): FitView {
   const chestMatches = chestEase >= targets.chest[0] && chestEase <= targets.chest[1];
   const waistMatches = waistEase >= targets.waist[0] && waistEase <= targets.waist[1];
   if (chestMatches && waistMatches) {
-    return { label: 'Best fit', tone: 'good', score: 94, chestEase, note: `${chestEase} cm chest ease matches your ${body.fit_preference} preference.` };
+    return { label: 'Best fit', tone: 'good', score: 94, chestEase, waistEase, note: `${chestEase} cm chest ease matches your ${body.fit_preference} preference.` };
   }
   if (chestEase >= targets.chest[0] - 4 && chestEase <= targets.chest[1] + 4) {
-    return { label: 'Close match', tone: 'warn', score: 79, chestEase, note: `${chestEase} cm chest ease is close; the feel may be slightly tighter or looser.` };
+    return { label: 'Close match', tone: 'warn', score: 79, chestEase, waistEase, note: `${chestEase} cm chest ease is close; the feel may be slightly tighter or looser.` };
   }
-  return { label: 'Not recommended', tone: 'bad', score: 52, chestEase, note: `The garment ease falls outside your ${body.fit_preference} fit range.` };
+  return { label: 'Not recommended', tone: 'bad', score: 52, chestEase, waistEase, note: `The garment ease falls outside your ${body.fit_preference} fit range.` };
 }
 
 function Mark({ children }: { children: React.ReactNode }) {
@@ -103,6 +104,7 @@ function App() {
   const [apiStatus, setApiStatus] = useState<'checking' | 'connected' | 'offline'>('checking');
   const [isLoadingFits, setIsLoadingFits] = useState(true);
   const [savingVariantId, setSavingVariantId] = useState<number | null>(null);
+  const [selectedRecommendation, setSelectedRecommendation] = useState<Recommendation | null>(null);
 
   const localRecommendations = useMemo(
     () => inventory.filter(item => item.stock > 0).map(item => ({ ...item, fit: scoreLocal(body, item) })).sort((a, b) => b.fit.score - a.fit.score),
@@ -142,6 +144,20 @@ function App() {
     connect();
     return () => { active = false; };
   }, []);
+
+  useEffect(() => {
+    if (!selectedRecommendation) return;
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+    const closeOnEscape = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') setSelectedRecommendation(null);
+    };
+    window.addEventListener('keydown', closeOnEscape);
+    return () => {
+      document.body.style.overflow = previousOverflow;
+      window.removeEventListener('keydown', closeOnEscape);
+    };
+  }, [selectedRecommendation]);
 
   async function saveProfile(event: React.FormEvent) {
     event.preventDefault();
@@ -219,7 +235,7 @@ function App() {
         {isLoadingFits ? <div className="empty-state">Recalculating your available fits…</div> : recommendations.length === 0 ? <div className="empty-state"><strong>No sellable match is available right now.</strong><span>The seller can restore a suitable size from the inventory workspace.</span></div> : <div className="cards">
           {recommendations.map((item, index) => <article className="product-card" key={item.id}>
             <div className={`garment art-${index % 3}`}><span className="size">{item.size}</span><div className="shirt" aria-hidden="true">♙</div></div>
-            <div className="card-content"><div className="card-top"><span className={`fit ${item.fit.tone}`}>{item.fit.label}</span><span className="confidence">{item.fit.score}% match</span></div><h3>{item.name}</h3><p className="subtle">{item.colour} · Size {item.size}</p><div className="fit-note"><Mark>{item.fit.chestEase} cm</Mark><span>{item.fit.note}</span></div><div className="card-footer"><span>{item.stock} available</span><button>View fit details</button></div></div>
+            <div className="card-content"><div className="card-top"><span className={`fit ${item.fit.tone}`}>{item.fit.label}</span><span className="confidence">{item.fit.score}% match</span></div><h3>{item.name}</h3><p className="subtle">{item.colour} · Size {item.size}</p><div className="fit-note"><Mark>{item.fit.chestEase} cm</Mark><span>{item.fit.note}</span></div><div className="card-footer"><span>{item.stock} available</span><button type="button" onClick={() => setSelectedRecommendation(item)} aria-label={`View fit details for ${item.name}, size ${item.size}`}>View fit details</button></div></div>
           </article>)}
         </div>}
       </>}
@@ -231,6 +247,36 @@ function App() {
 
       {view === 'seller' && <section className="inventory-card"><div className="inventory-summary"><div><p className="eyebrow">CATALOGUE VISIBILITY · {apiStatus === 'connected' ? 'NEON PERSISTED' : 'LOCAL DEMO'}</p><h2>Variant-level stock</h2><p>When a size reaches zero, the cloud fit engine immediately removes it from customer recommendations.</p></div><div className="stock-total"><strong>{inventory.reduce((sum, item) => sum + item.stock, 0)}</strong><span>units available</span></div></div><div className="table-wrap"><table><thead><tr><th>Product</th><th>SKU</th><th>Variant</th><th>Status</th><th>Available</th><th>Quick adjust</th></tr></thead><tbody>{inventory.map(item => <tr key={item.id}><td><strong>{item.name}</strong><small>{item.colour}</small></td><td><code>{item.sku}</code></td><td>Size {item.size}</td><td><span className={`status ${item.stock ? 'available' : 'out'}`}><i/>{item.stock ? 'Visible' : 'Hidden'}</span></td><td><strong>{item.stock}</strong>{item.reserved > 0 && <small>{item.reserved} reserved</small>}</td><td><div className="stepper"><button disabled={savingVariantId !== null || item.stock === 0} onClick={() => adjustStock(item.id, -1)} aria-label={`Remove one ${item.sku}`}>−</button><span>{savingVariantId === item.id ? '…' : item.stock}</span><button disabled={savingVariantId !== null} onClick={() => adjustStock(item.id, 1)} aria-label={`Add one ${item.sku}`}>+</button></div></td></tr>)}</tbody></table></div></section>}
     </main>
+
+    {selectedRecommendation && <div className="fit-modal-backdrop" onMouseDown={() => setSelectedRecommendation(null)}>
+      <section className="fit-modal" role="dialog" aria-modal="true" aria-labelledby="fit-modal-title" onMouseDown={event => event.stopPropagation()}>
+        <div className="fit-modal-heading">
+          <div><p className="eyebrow">PERSONALISED FIT BREAKDOWN</p><h2 id="fit-modal-title">Why size {selectedRecommendation.size} fits you</h2><p>{selectedRecommendation.name} · {selectedRecommendation.colour}</p></div>
+          <button type="button" className="modal-close" onClick={() => setSelectedRecommendation(null)} aria-label="Close fit details">×</button>
+        </div>
+        <div className="fit-verdict">
+          <span className={`fit ${selectedRecommendation.fit.tone}`}>{selectedRecommendation.fit.label}</span>
+          <strong>{selectedRecommendation.fit.score}% match</strong>
+          <p>{selectedRecommendation.fit.note}</p>
+        </div>
+        <div className="ease-summary">
+          <div><span>Chest ease</span><strong>{selectedRecommendation.fit.chestEase} cm</strong><small>Room beyond your chest</small></div>
+          <div><span>Waist ease</span><strong>{selectedRecommendation.fit.waistEase} cm</strong><small>Room beyond your waist</small></div>
+          <div><span>Availability</span><strong>{selectedRecommendation.stock}</strong><small>units ready to sell</small></div>
+        </div>
+        <div className="measurement-comparison">
+          <h3>Your body vs. this garment</h3>
+          <div className="comparison-header"><span>Measurement</span><span>You</span><span>Garment</span></div>
+          {(['chest', 'waist', 'hip', 'shoulder', 'sleeve'] as (keyof Measurements)[]).map(key => <div className="comparison-row" key={key}>
+            <span>{key[0].toUpperCase() + key.slice(1)}</span><strong>{body[key]} cm</strong><strong>{selectedRecommendation[key]} cm</strong>
+          </div>)}
+        </div>
+        <div className="fit-modal-actions">
+          <button type="button" className="secondary" onClick={() => { setSelectedRecommendation(null); setView('profile'); }}>Edit my measurements</button>
+          <button type="button" onClick={() => setSelectedRecommendation(null)}>Done</button>
+        </div>
+      </section>
+    </div>}
   </div>;
 }
 
