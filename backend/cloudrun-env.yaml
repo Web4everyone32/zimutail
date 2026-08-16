@@ -1,0 +1,3 @@
+ENVIRONMENT: production
+FRONTEND_URL: https://zimutail.com
+CORS_ORIGINS_CSV: https://www.zimutail.com,https://zimutail-fit.oveyjval1.workers.dev

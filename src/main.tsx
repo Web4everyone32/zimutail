@@ -1,6 +1,7 @@
-import React, { useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { createRoot } from 'react-dom/client';
 import './styles.css';
+import './cloud-status.css';
 
 type Measurements = { chest: number; waist: number; hip: number; shoulder: number; sleeve: number };
 type Variant = Measurements & { id: number; name: string; sku: string; size: string; colour: string; stock: number };
@@ -12,6 +13,7 @@ const variants: Variant[] = [
 ];
 
 const initialBody: Measurements = { chest: 99, waist: 86, hip: 100, shoulder: 44, sleeve: 61 };
+const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000/api/v1';
 
 function scoreFit(body: Measurements, garment: Variant) {
   const chestEase = garment.chest - body.chest;
@@ -32,7 +34,21 @@ function App() {
   const [draft, setDraft] = useState(initialBody);
   const [notice, setNotice] = useState('');
   const [inventory, setInventory] = useState(variants);
+  const [apiStatus, setApiStatus] = useState<'checking' | 'connected' | 'offline'>('checking');
   const recommendations = useMemo(() => inventory.map(v => ({ ...v, fit: scoreFit(body, v) })).sort((a, b) => b.fit.score - a.fit.score), [body, inventory]);
+
+  useEffect(() => {
+    const controller = new AbortController();
+    fetch(`${API_URL}/health`, { signal: controller.signal })
+      .then(response => {
+        if (!response.ok) throw new Error('API unavailable');
+        setApiStatus('connected');
+      })
+      .catch(error => {
+        if (error.name !== 'AbortError') setApiStatus('offline');
+      });
+    return () => controller.abort();
+  }, []);
 
   function saveProfile(e: React.FormEvent) {
     e.preventDefault(); setBody(draft); setNotice('Profile updated — recommendations recalculated.');
@@ -56,7 +72,7 @@ function App() {
     </aside>
 
     <main>
-      <header><div><p className="eyebrow">FIRST RELEASE · LIVE PROTOTYPE</p><h1>{view === 'recommendations' ? 'Your fit shortlist' : view === 'profile' ? 'Body measurements' : 'Seller inventory'}</h1></div><div className="profile-pill"><span className="pulse"/> Profile complete <b>92%</b></div></header>
+      <header><div><p className="eyebrow">FIRST RELEASE · LIVE PROTOTYPE</p><h1>{view === 'recommendations' ? 'Your fit shortlist' : view === 'profile' ? 'Body measurements' : 'Seller inventory'}</h1></div><div className="header-tools"><div className={`api-pill ${apiStatus}`}><span className="pulse"/> {apiStatus === 'connected' ? 'Cloud API connected' : apiStatus === 'offline' ? 'API unavailable' : 'Connecting API'}</div><div className="profile-pill"><span className="pulse"/> Profile complete <b>92%</b></div></div></header>
       {notice && <div className="toast">✓ {notice}</div>}
 
       {view === 'recommendations' && <>

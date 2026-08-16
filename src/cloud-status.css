@@ -1,0 +1,22 @@
+.header-tools {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+}
+
+.api-pill {
+  padding: 9px 14px;
+  border: 1px solid #e0ded6;
+  border-radius: 30px;
+  background: #fff;
+  font-size: 12px;
+}
+
+.api-pill.connected { color: #3d6d2d; }
+.api-pill.offline { color: #9a523f; }
+.api-pill.checking .pulse { background: #d5aa54; }
+.api-pill.offline .pulse { background: #c96c58; }
+
+@media (max-width: 720px) {
+  .api-pill { font-size: 10px; }
+}

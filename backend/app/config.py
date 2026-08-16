@@ -13,6 +13,7 @@ class Settings(BaseSettings):
     environment: str = "development"
     api_prefix: str = "/api/v1"
     frontend_url: str = "http://localhost:5173"
+    cors_origins_csv: str = ""
     database_url: str = "sqlite:///./zimutail.db"
     jwt_secret: str = "development-only-change-me"
     jwt_algorithm: str = "HS256"
@@ -31,6 +32,7 @@ class Settings(BaseSettings):
     @property
     def cors_origins(self) -> list[str]:
         origins = [self.frontend_url]
+        origins.extend(origin.strip() for origin in self.cors_origins_csv.split(",") if origin.strip())
         if self.environment != "production":
             origins.extend(["http://127.0.0.1:5173", "http://localhost:5173"])
         return sorted(set(origins))
