@@ -5,16 +5,18 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "build": "vite build && node scripts/build-worker.mjs",
+    "build": "node scripts/clean-dist.mjs && vite build && node scripts/normalize-sites-build.mjs",
     "preview": "vite preview"
   },
   "dependencies": {
+    "@cloudflare/vite-plugin": "^1.52.1",
     "@openai/sites-vite-plugin": "^0.2.0",
     "@vitejs/plugin-react": "^6.0.5",
     "vite": "^8.2.1",
     "typescript": "^5.7.2",
     "react": "^18.3.1",
-    "react-dom": "^18.3.1"
+    "react-dom": "^18.3.1",
+    "wrangler": "^4.123.0"
   },
   "devDependencies": {}
 }
