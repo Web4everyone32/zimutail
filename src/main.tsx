@@ -37,7 +37,9 @@ const fallbackVariants: Variant[] = [
 ];
 
 const initialBody: BodyProfile = { chest: 99, waist: 86, hip: 100, shoulder: 44, sleeve: 61, fit_preference: 'regular' };
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000/api/v1';
+const API_URL = import.meta.env.PROD
+  ? 'https://zimutail-api-44czinycoa-as.a.run.app/api/v1'
+  : import.meta.env.VITE_API_URL || 'http://localhost:8000/api/v1';
 
 async function apiRequest<T>(path: string, init?: RequestInit): Promise<T> {
   const response = await fetch(`${API_URL}${path}`, {
