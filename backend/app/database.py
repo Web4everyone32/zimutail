@@ -20,3 +20,12 @@ def get_db() -> Generator[Session, None, None]:
         yield session
     finally:
         session.close()
+
+
+def initialize_database() -> None:
+    from .models import Base
+    from .services.fit_service import seed_catalogue
+
+    Base.metadata.create_all(bind=engine)
+    with SessionLocal() as session:
+        seed_catalogue(session)

@@ -12,7 +12,7 @@
   font-size: 12px;
 }
 
-.api-pill.connected { color: #3d6d2d; }
+.api-pill.connected { color: #3d6d2d; background: #f5faef; border-color: #d6e8c7; }
 .api-pill.offline { color: #9a523f; }
 .api-pill.checking .pulse { background: #d5aa54; }
 .api-pill.offline .pulse { background: #c96c58; }

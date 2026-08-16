@@ -1,0 +1,93 @@
+button:disabled {
+  cursor: not-allowed;
+  opacity: .55;
+}
+
+.hero-panel h2,
+.hero-panel p {
+  max-width: 680px;
+}
+
+.product-card.disabled {
+  opacity: 1;
+}
+
+.empty-state {
+  min-height: 220px;
+  border: 1px dashed #cdd5cf;
+  border-radius: 17px;
+  background: #fff;
+  display: grid;
+  place-content: center;
+  gap: 8px;
+  padding: 32px;
+  color: #71807b;
+  text-align: center;
+}
+
+.empty-state strong {
+  color: #29473f;
+  font: 700 18px Manrope;
+}
+
+.preference-field {
+  margin-top: 24px;
+}
+
+.preference-field > span {
+  display: block;
+  margin-bottom: 7px;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.preference-options {
+  display: flex;
+  gap: 8px;
+}
+
+.preference-options button {
+  flex: 1;
+  border: 1px solid #d9d8d1;
+  border-radius: 10px;
+  padding: 10px;
+  background: #f8f8f4;
+  color: #60716c;
+  cursor: pointer;
+}
+
+.preference-options button.selected {
+  border-color: #2c6b5b;
+  background: #e5efe9;
+  color: #17473b;
+  font-weight: 700;
+  box-shadow: 0 0 0 2px #d7e8e1;
+}
+
+.toast {
+  max-width: 470px;
+}
+
+.stepper button:hover:not(:disabled) {
+  background: #dfe8de;
+}
+
+@media (max-width: 720px) {
+  header {
+    gap: 14px;
+  }
+
+  .header-tools {
+    align-items: flex-end !important;
+    flex-direction: column;
+  }
+
+  .section-heading {
+    align-items: flex-start;
+    gap: 16px;
+  }
+
+  .preference-options {
+    flex-direction: column;
+  }
+}
